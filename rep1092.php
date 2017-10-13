@@ -117,17 +117,7 @@ $rep->TextCol(0, 1,	$s++, -2);
 			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 			{
 				$rep->TextCol(2, 3,	$DisplayQty, -2);
-				 $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                if($pref['alt_uom'] == 1)
-                {
-                    $rep->TextCol(3, 4,	$myrow2['units_id'], -2);
-                }
-                else
-                {
-                    $rep->TextCol(3, 4,	$myrow2['units'], -2);
-                }
-
+				$rep->TextCol(3, 4,	$myrow2['units'], -2);
 				$rep->TextCol(4, 5,	$DisplayPrice, -2);
 				//$rep->TextCol(5, 6,	$DisplayDiscount, -2);
 				$rep->TextCol(5, 6,	$DisplayNet, -2);

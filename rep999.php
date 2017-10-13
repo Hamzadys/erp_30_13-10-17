@@ -289,16 +289,7 @@ function print_invoices()
 //			$rep->row = $oldrow;
 //		//	if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !$SysPrefs->no_zero_lines_amount()) {
 				$rep->TextCol(0, 1,	$DisplayQty, -2);
-				$pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-            if($pref['alt_uom'] == 1)
-            {
-                $rep->TextCol(1, 2, $myrow2['units_id'], -2);
-            }
-            else
-            {
-                $rep->TextCol(1, 2, $myrow2['units'], -2);
-            }
+				$rep->TextCol(1, 2,	$myrow2['units'], -2);
 			$tot=round2($myrow2["quantity"]*$myrow2["unit_price"]);
 				$rep->TextColLines(2, 3, $myrow2['StockDescription'], -2);
 			$rep->TextCol(3, 4,	$DisplayPrice, -2);

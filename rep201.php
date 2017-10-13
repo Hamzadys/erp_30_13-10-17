@@ -42,7 +42,7 @@ function getTransactions($supplier_id, $from, $to)
 	$to = date2sql($to);
 
     $sql = "SELECT *,
-				(ov_amount + ov_gst + ov_discount - ( supply_disc + service_disc + fbr_disc +  srb_disc) ) AS TotalAmount,
+				(ov_amount + ov_gst + ov_discount) AS TotalAmount,
 				alloc AS Allocated,
 				((type = ".ST_SUPPINVOICE.") AND due_date < '$to') AS OverDue
    			FROM ".TB_PREF."supp_trans
@@ -195,9 +195,9 @@ function print_supplier_balances()
 				$item[3] = $item[0] - $item[2];
 			else	
 				$item[3] = ($item[1] - $item[2]) * -1;
-			if ($show_balance)
+			if ($show_balance)	
 				$rep->AmountCol(7, 8, $accumulate, $dec);
-			else
+			else	
 				$rep->AmountCol(7, 8, $item[3], $dec);
 			for ($i = 0; $i < 4; $i++)
 			{

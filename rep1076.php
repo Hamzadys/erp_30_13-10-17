@@ -19,7 +19,7 @@ include_once($path_to_root . "/sales/includes/sales_db.inc");
 print_invoices();
 
 //----------------------------------------------------------------------------------------------------
-function get_phoness($debtor_no)
+function get_phone($debtor_no)
 {
 	$sql = "SELECT phone FROM `0_crm_persons` WHERE `id` IN (
    SELECT person_id FROM `0_crm_contacts` WHERE `type`='cust_branch' AND `action`='general'
@@ -151,18 +151,8 @@ function print_invoices()
 
 			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 			{
-                    $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                if($pref['alt_uom'] == 1)
-                {
-                    $rep->TextCol(0, 1,$DisplayQty.' '. $myrow2['units_id'], -2);
-                }
-                else
-                {
-                    $rep->TextCol(0, 1,$DisplayQty.' '. $myrow2['units'], -2);
-                }
 
-			
+				$rep->TextCol(0, 1,	$DisplayQty.' '.$myrow2["units"]);
 				$rep->AmountCol(2, 3,	$unit_price, $dec);
 				$rep->AmountCol(3, 4,	$Net_amount, $dec);
 				$DisplaySubTot += $Net_amount;
@@ -249,7 +239,7 @@ function print_invoices()
 		$rep->TextCol(3, 5,_("Invoice Total (Rs.)"), - 2);
 		$rep->AmountCol(5, 6, $DisplayTotal, $dec);
 		$words = price_in_words($myrow['Total'], ST_SALESINVOICE);
-		$cust_phone = get_phoness($rep->formData['debtor_no']);
+		$cust_phone = get_phone($rep->formData['debtor_no']);
 
 		$rep->MultiCell(250, 20, "Tel:           ".$cust_phone['phone'], 0, 'L', 0, 2, 50,259, true);
 

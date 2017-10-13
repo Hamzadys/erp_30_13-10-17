@@ -1,5 +1,4 @@
 <?php
-
 $page_security = $_POST['PARAM_0'] == $_POST['PARAM_1'] ?
 	'SA_SALESTRANSVIEW' : 'SA_SALESBULKREP';
 // ----------------------------------------------------------------
@@ -22,7 +21,7 @@ print_sales_quotations();
 
 function print_sales_quotations()
 {
-	global $path_to_root, $SysPrefs;
+	global $path_to_root, $print_as_quote, $print_invoice_no, $no_zero_lines_amount;
 
 	include_once($path_to_root . "/reporting/includes/pdf_report.inc");
 
@@ -38,14 +37,10 @@ function print_sales_quotations()
 	$orientation = ($orientation ? 'L' : 'P');
 	$dec = user_price_dec();
 
-	$pictures = $SysPrefs->print_item_images_on_quote();
-	// If you want a larger image, then increase pic_height f.i.
-	// $SysPrefs->pic_height += 25;
-	
-	$cols = array(4, 60, 225, 300, 325, 385, 450, 515);
+	$cols = array(4, 40,  250, 300, 350,  450);
 
 	// $headers in doctext.inc
-	$aligns = array('left',	'left',	'right', 'left', 'right', 'right', 'right');
+	$aligns = array('left',	'left',	'right', 'left', 'right', 'right');
 
 	$params = array('comments' => $comments);
 
@@ -59,32 +54,31 @@ function print_sales_quotations()
 	for ($i = $from; $i <= $to; $i++)
 	{
 		$myrow = get_sales_order_header($i, ST_SALESQUOTE);
-		if ($currency != ALL_TEXT && $myrow['curr_code'] != $currency) {
-			continue;
-		}
 		$baccount = get_default_bank_account($myrow['curr_code']);
 		$params['bankaccount'] = $baccount['id'];
 		$branch = get_branch($myrow["branch_code"]);
 		if ($email == 1)
 		{
 			$rep = new FrontReport("", "", user_pagesize(), 9, $orientation);
-			if ($SysPrefs->print_invoice_no() == 1)
+			if ($print_invoice_no == 1)
 				$rep->filename = "SalesQuotation" . $i . ".pdf";
 			else	
 				$rep->filename = "SalesQuotation" . $myrow['reference'] . ".pdf";
 		}
+		$rep->SetHeaderType('Header111');
 		$rep->currency = $cur;
 		$rep->Font();
 		$rep->Info($params, $cols, null, $aligns);
 
 		$contacts = get_branch_contacts($branch['branch_code'], 'order', $branch['debtor_no'], true);
 		$rep->SetCommonData($myrow, $branch, $myrow, $baccount, ST_SALESQUOTE, $contacts);
-		$rep->SetHeaderType('Header21');
+		//$rep->headerFunc = 'Header2';
 		$rep->NewPage();
 
 		$result = get_sales_order_details($i, ST_SALESQUOTE);
 		$SubTotal = 0;
 		$items = $prices = array();
+$s=1;
 		while ($myrow2=db_fetch($result))
 		{
 			$Net = round2(((1 - $myrow2["discount_percent"]) * $myrow2["unit_price"] * $myrow2["quantity"]),
@@ -99,33 +93,22 @@ function print_sales_quotations()
 				$DisplayDiscount ="";
 			else
 				$DisplayDiscount = number_format2($myrow2["discount_percent"]*100,user_percent_dec()) . "%";
-			$rep->TextCol(0, 1,	$myrow2['stk_code'], -2);
+			//$rep->TextCol(0, 1,	$myrow2['stk_code'], -2);
+$rep->TextCol(0, 1,	$s++, -2);
 			$oldrow = $rep->row;
 			$rep->TextColLines(1, 2, $myrow2['description'], -2);
 			$newrow = $rep->row;
 			$rep->row = $oldrow;
-			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !$SysPrefs->no_zero_lines_amount())
+			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 			{
 				$rep->TextCol(2, 3,	$DisplayQty, -2);
 				$rep->TextCol(3, 4,	$myrow2['units'], -2);
 				$rep->TextCol(4, 5,	$DisplayPrice, -2);
-				$rep->TextCol(5, 6,	$DisplayDiscount, -2);
-				$rep->TextCol(6, 7,	$DisplayNet, -2);
-			}
+				//$rep->TextCol(5, 6,	$DisplayDiscount, -2);
+				$rep->TextCol(5, 6,	$DisplayNet, -2);
+			}	
 			$rep->row = $newrow;
-			
-			if ($pictures)
-			{
-				$image = company_path(). "/images/" . item_img_name($myrow2['stk_code']) . ".jpg";
-				if (file_exists($image))
-				{
-					if ($rep->row - $SysPrefs->pic_height < $rep->bottomMargin)
-						$rep->NewPage();
-					$rep->AddImage($image, $rep->cols[1], $rep->row - $SysPrefs->pic_height, 0, $SysPrefs->pic_height);
-					$rep->row -= $SysPrefs->pic_height;
-					$rep->NewLine();
-				}
-			}
+			//$rep->NewLine(1);
 			if ($rep->row < $rep->bottomMargin + (15 * $rep->lineHeight))
 				$rep->NewPage();
 		}
@@ -135,25 +118,24 @@ function print_sales_quotations()
 			$rep->TextColLines(1, 5, $myrow['comments'], -2);
 		}
 		$DisplaySubTot = number_format2($SubTotal,$dec);
+		$DisplayFreight = number_format2($myrow["freight_cost"],$dec);
 
 		$rep->row = $rep->bottomMargin + (15 * $rep->lineHeight);
 		$doctype = ST_SALESQUOTE;
 
-		$rep->TextCol(3, 6, _("Sub-total"), -2);
-		$rep->TextCol(6, 7,	$DisplaySubTot, -2);
+		$rep->TextCol(3, 5, _("Sub-total"), -2);
+		$rep->TextCol(5, 6,	$DisplaySubTot, -2);
 		$rep->NewLine();
-		if ($myrow['freight_cost'] != 0.0)
-		{
-			$DisplayFreight = number_format2($myrow["freight_cost"],$dec);
-			$rep->TextCol(3, 6, _("Shipping"), -2);
-			$rep->TextCol(6, 7,	$DisplayFreight, -2);
-			$rep->NewLine();
-		}	
+		//$rep->TextCol(3, 5, _("Shipping"), -2);
+		//$rep->TextCol(5, 7,	$DisplayFreight, -2);
+		//$rep->NewLine();
+
 		$DisplayTotal = number_format2($myrow["freight_cost"] + $SubTotal, $dec);
+
 		if ($myrow['tax_included'] == 0) {
-			$rep->TextCol(3, 6, _("TOTAL ORDER EX VAT"), - 2);
-			$rep->TextCol(6, 7,	$DisplayTotal, -2);
-			$rep->NewLine();
+			//$rep->TextCol(3, 6, _("TOTAL ORDER EX GST"), - 2);
+			//$rep->TextCol(6, 7,	$DisplayTotal, -2);
+			//$rep->NewLine();
 		}
 
 		$tax_items = get_tax_for_items($items, $prices, $myrow["freight_cost"],
@@ -169,46 +151,55 @@ function print_sales_quotations()
 
 			if ($myrow['tax_included'])
 			{
-				if ($SysPrefs->alternative_tax_include_on_docs() == 1)
+				if (isset($alternative_tax_include_on_docs) && $alternative_tax_include_on_docs == 1)
 				{
 					if ($first)
 					{
-						$rep->TextCol(3, 6, _("Total Tax Excluded"), -2);
-						$rep->TextCol(6, 7,	number_format2($sign*$tax_item['net_amount'], $dec), -2);
+						//$rep->TextCol(3, 6, _("Total Tax Excluded"), -2);
+						//$rep->TextCol(6, 7,	number_format2($sign*$tax_item['net_amount'], $dec), -2);
 						$rep->NewLine();
 					}
-					$rep->TextCol(3, 6, $tax_type_name, -2);
-					$rep->TextCol(6, 7,	$DisplayTax, -2);
+					//$rep->TextCol(3, 6, $tax_type_name, -2);
+					//$rep->TextCol(6, 7,	$DisplayTax, -2);
 					$first = false;
 				}
 				else
-					$rep->TextCol(3, 7, _("Included") . " " . $tax_type_name . " " . _("Amount") . ": " . $DisplayTax, -2);
+{
+					$rep->TextCol(3, 7, $tax_type_name, -2);
+$rep->TextCol(5, 7,	$DisplayTax, -2);
+}
 			}
 			else
 			{
 				$SubTotal += $tax_item['Value'];
-				$rep->TextCol(3, 6, $tax_type_name, -2);
-				$rep->TextCol(6, 7,	$DisplayTax, -2);
+				$rep->TextCol(3, 5, $tax_type_name, -2);
+				$rep->TextCol(5, 6,	$DisplayTax, -2);
 			}
 			$rep->NewLine();
 		}
 
-		$rep->NewLine();
+		//$rep->NewLine();
 
 		$DisplayTotal = number_format2($myrow["freight_cost"] + $SubTotal, $dec);
 		$rep->Font('bold');
-		$rep->TextCol(3, 6, _("TOTAL ORDER VAT INCL."). ' ' . $rep->formData['curr_code'], - 2);
-		$rep->TextCol(6, 7,	$DisplayTotal, -2);
+		$rep->TextCol(3, 5, _("TOTAL ORDER GST INCL."), - 2);
+		$rep->TextCol(5, 6,	$DisplayTotal, -2);
 		$words = price_in_words($myrow["freight_cost"] + $SubTotal, ST_SALESQUOTE);
 		if ($words != "")
 		{
 			$rep->NewLine(1);
 			$rep->TextCol(1, 7, $myrow['curr_code'] . ": " . $words, - 2);
-		}	
-		$rep->Font();
+		}
+$rep->Font();	
+$rep->NewLine(3.5);
+                $subtotal_in_words = _number_to_words($SubTotal + $myrow["freight_cost"] ,ST_SALESQUOTE);
+		//$rep->TextCol(0, 7, "Amount in words: ".$subtotal_in_words, -2);
+$rep->MultiCell(525, 30, "Amount in words: ".$subtotal_in_words ,0, 'L', 0, 2, 40,720, true);//S.no
+			
+		
 		if ($email == 1)
 		{
-			if ($SysPrefs->print_invoice_no() == 1)
+			if ($print_invoice_no == 1)
 				$myrow['reference'] = $i;
 			$rep->End($email);
 		}
@@ -217,3 +208,4 @@ function print_sales_quotations()
 		$rep->End();
 }
 
+?>

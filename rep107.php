@@ -152,28 +152,18 @@ function print_invoices()
 	    		else
 		  			$DisplayDiscount = number_format2($myrow2["discount_percent"]*100,user_percent_dec()) . "%";
 				$c=0;
-				$rep->TextCol(0, 1,	$myrow2['stock_id'], -2);
+				$rep->TextCol($c++, $c,	$myrow2['stock_id'], -2);
 				$oldrow = $rep->row;
-				$rep->TextColLines(1, 2, $myrow2['StockDescription'], -2);
+				$rep->TextColLines($c++, $c, $myrow2['StockDescription'], -2);
 				$newrow = $rep->row;
 				$rep->row = $oldrow;
 				if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !$SysPrefs->no_zero_lines_amount())
 				{
-					$rep->TextCol(2, 3,	$DisplayQty, -2);
-                    $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                    if($pref['alt_uom'] == 1)
-                    {
-                        $rep->TextCol(3, 4, $myrow2['units_id'], -2);
-                    }
-                    else
-                    {
-                        $rep->TextCol(3, 4, $myrow2['units'], -2);
-                    }
-
-					$rep->TextCol(4, 5,	$DisplayPrice, -2);
-					$rep->TextCol(5, 6,	$DisplayDiscount, -2);
-					$rep->TextCol(6, 7,	$DisplayNet, -2);
+					$rep->TextCol($c++, $c,	$DisplayQty, -2);
+					$rep->TextCol($c++, $c,	$myrow2['units'], -2);
+					$rep->TextCol($c++, $c,	$DisplayPrice, -2);
+					$rep->TextCol($c++, $c,	$DisplayDiscount, -2);
+					$rep->TextCol($c++, $c,	$DisplayNet, -2);
 				}
 				$rep->row = $newrow;
 				//$rep->NewLine(1);

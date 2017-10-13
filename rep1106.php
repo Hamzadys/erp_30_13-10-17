@@ -119,15 +119,7 @@ $a=1;
 				$rep->row = $oldrow;
 				if ($Net != 0.0  || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 				{			
-							  $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                    if($pref['alt_uom'] == 1)
-                    {
-                        $rep->TextCol(4, 5, $myrow2["quantity"]." ".$myrow2['units_id'], -2);
-                    }
-                    else {
-                        $rep->TextCol(4, 5, $myrow2["quantity"]." ".$myrow2['units'], -2);
-                    }
+					$rep->TextCol(4, 5,	$myrow2["quantity"]." ".$myrow2['units'], -2);
 					//$rep->TextCol(6, 7,	$myrow2['units'], -2);
 					if ($packing_slip == 0)
 					{

@@ -123,17 +123,7 @@ function print_sales_orders()
 			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !$SysPrefs->no_zero_lines_amount())
 			{
 				$rep->TextCol(2, 3,	$DisplayQty, -2);
-				 $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                if($pref['alt_uom'] == 1)
-                {
-                    $rep->TextCol(3, 4,	$myrow2['units_id'], -2);
-                }
-                else
-                {
-                    $rep->TextCol(3, 4,	$myrow2['units'], -2);
-                }
-
+				$rep->TextCol(3, 4,	$myrow2['units'], -2);
 				$rep->TextCol(4, 5,	$DisplayPrice, -2);
 				$rep->TextCol(5, 6,	$DisplayDiscount, -2);
 				$rep->TextCol(6, 7,	$DisplayNet, -2);

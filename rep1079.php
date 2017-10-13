@@ -59,39 +59,13 @@ function get_tax_amount($trans_no, $stock_id)
 	$row = db_fetch_row($result);
 	return $row['0'];
 }
-function get_debtor_trans_info($trans_no)
-{
-	$sql = "SELECT * FROM ".TB_PREF."debtor_trans 
-	WHERE trans_no = ".db_escape($trans_no)."
-	AND type = 10
-	
-	";
-	$result = db_query($sql, "could not retreive default customer currency code");
-	$row = db_fetch($result);
-	return $row;
-}
-function get_tax_rate_1()
-{
-    $sql = "SELECT ".TB_PREF."tax_types.rate FROM ".TB_PREF."tax_types
-	 WHERE ".TB_PREF."tax_types.id = 2";
-    $result = db_query($sql, 'error');
-    return $result;
-}
-function get_phoneno_for_suppliers_($customer_id)
-{
-    $sql = "SELECT * FROM ".TB_PREF."crm_persons WHERE `id` IN (
-            SELECT person_id FROM ".TB_PREF."crm_contacts WHERE `type`='customer' AND `action`='general' AND entity_id IN (
-            SELECT branch_code FROM ".TB_PREF."cust_branch WHERE debtor_no=".db_escape($customer_id)."))";
-    $query = db_query($sql, "Error");
-    return db_fetch($query);
-}
+
 print_invoices();
 
 //----------------------------------------------------------------------------------------------------
 
 function print_invoices()
 {
-
 	global $path_to_root, $alternative_tax_include_on_docs, $suppress_tax_rates, $no_zero_lines_amount;
 	
 	include_once($path_to_root . "/reporting/includes/pdf_report.inc");
@@ -158,12 +132,11 @@ function print_invoices()
 			$rep->NewPage();
    			$result = get_customer_trans_details(ST_SALESINVOICE, $i);
 			$SubTotal = 0;
-            $total_price =0;
-            $total_including_tax=0;
-            $total_amount=0;
-            $DisplayPq =0;
-            $amount_including_tax = 0;
-        $myrow3 = db_fetch(get_tax_rate_1());
+		$total_price =0;
+		$total_including_tax=0;
+		$total_amount=0;
+		$DisplayPq =0;
+		$amount_including_tax = 0;
 			while ($myrow2=db_fetch($result))
 			{
 				if ($myrow2["quantity"] == 0)
@@ -174,16 +147,8 @@ function print_invoices()
 				$SubTotal += $Net;
 	    		$DisplayPrice = number_format2($myrow2["unit_price"],$dec);
 	    		$DisplayQty = number_format2($sign*$myrow2["quantity"], 0);
-				$DisplayPq =  ($myrow2["unit_price"] * $myrow2["quantity"] );
+				$DisplayPq =  ($myrow2["unit_price"] * $DisplayQty );
 	    		$DisplayNet = number_format2($Net,$dec);
-                $rate = $myrow3['rate'];
-                $unit_price=$myrow2["unit_price"] - $myrow2["unit_tax"];
-                $val_exc=$unit_price * $myrow2["quantity"];
-                $val_inc = $myrow2["unit_price"] * $myrow2["quantity"];
-                $amount_salestax=($rate / 100) * $val_exc;
-                $amount_salestax2 = ($rate / 100) * $DisplayPq;
-                $val_exc_=$amount_salestax + $val_exc;
-                $val_inc_ =$amount_salestax2 + $DisplayPq;
 	    		if ($myrow2["discount_percent"]==0)
 		  			$DisplayDiscount ="";
 	    		else
@@ -193,25 +158,13 @@ function print_invoices()
 				$rep->TextColLines(1, 2, $myrow2['StockDescription'], -2);
 				$newrow = $rep->row;
 				$rep->row = $oldrow;
-                $get_debtor_trans = get_debtor_trans_info($myrow['trans_no']);
 				if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 				{
-					$rep->TextCol(0, 1,	$DisplayQty .$myrow2["units_id"] , -2);
-                    if ($get_debtor_trans['tax_included'] == 1) {
-                        $rep->TextCol(2, 3, $unit_price, -2);
-                        $rep->TextCol(3, 4, $val_exc, -2);
-                        $rep->TextCol(4, 5, $rate . "%", -2);
-                        $rep->TextCol(5, 6, ($rate / 100) * $val_exc, $dec);
-                        $rep->AmountCol(6, 7, ($val_exc_), $dec);
-                    }
-                    else
-                    {
-                        $rep->TextCol(2, 3, $myrow2["unit_price"], -2);
-                        $rep->TextCol(3, 4, $DisplayPq, -2);
-                        $rep->TextCol(4, 5, $rate . "%", -2);
-                        $rep->TextCol(5, 6, $amount_salestax2, $dec);
-                        $rep->AmountCol(6, 7, $amount_salestax2 + $DisplayPq, $dec);
-                    }
+					$rep->TextCol(0, 1,	$DisplayQty, -2);
+//					$rep->TextCol(3, 4,	$myrow2['units'], -2);
+					$rep->TextCol(2, 3,	$DisplayPrice, -2);
+					$rep->AmountCol(6,7,	$DisplayPq, $dec);
+					$rep->TextCol(4, 5,	get_tax_rate($i, $myrow2['stock_id'])."%", -2);
 					//$rate_ = get_tax($myrow2['tax_type_id']);
 					//$amount_of_sales_taxincluding_sales_tax  = $rate_ / 100;
 					//$amount_including_tax=  $DisplayPq * $amount_of_sales_tax  ;
@@ -220,26 +173,22 @@ function print_invoices()
 
 					//$rep->TextCol(5, 6,	price_format($amount_including_tax), -2);
 
-
+					$rep->TextCol(5, 6,	$amount_including_tax, $dec);
 					
 					$amount_excluding_tax = $DisplayPq-$DisplayPrice;
-
+	$rep->TextCol(3, 4,	$DisplayPq -$amount_including_tax  , -2);
 
 
 					$including_sales_tax=  $DisplayPq + $amount_including_tax;
 				//	$rep->TextCol(6, 7,	price_format($including_sales_tax), -2);
 
 
-                    $a=$DisplayPq -$amount_including_tax;
+$a=$DisplayPq -$amount_including_tax;
 
 					//$total_price += $myrow2["unit_price"];
-					$total_value_excl_tax += $val_exc;
-					$total_amount += $amount_salestax;
-					$total_including_tax += ($val_exc_);
-
-                    $total_value_excl_tax2 += $DisplayPq;
-                    $total_amount2 += $amount_salestax2;
-                    $total_including_tax2 += ($val_inc_);
+					$total_value_excl_tax += $a;
+					$total_amount += $amount_including_tax;
+					$total_including_tax += $DisplayPq;
 
 				}
 				//$rep->row = $newrow;
@@ -266,18 +215,10 @@ function print_invoices()
 		$rep->NewLine(-15);
 		$rep->Font('bold');
 		$rep->TextCol(1, 2, "TOTAL", -2);
-        if ($get_debtor_trans['tax_included'] == 1) {
 			//$rep->TextCol(2, 3,price_format($total_price), -2);
 			$rep->TextCol(3, 4,price_format($total_value_excl_tax ), -2);
 			$rep->TextCol(5, 6,price_format($total_amount), -2);
 			$rep->TextCol(6, 7,price_format($total_including_tax), -2);
-        }
-        else
-        {
-            $rep->TextCol(3, 4,price_format($total_value_excl_tax2 ), -2);
-            $rep->TextCol(5, 6,price_format($total_amount2), -2);
-            $rep->TextCol(6, 7,price_format($total_including_tax2), -2);
-        }
 		$rep->Font('');
 		//$rep->NewLine(-4);
 //			$rep->TextCol(6, 7,	$total_price, -2);

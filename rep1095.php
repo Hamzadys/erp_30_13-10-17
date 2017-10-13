@@ -40,10 +40,10 @@ function print_sales_orders()
 	$orientation = ($orientation ? 'L' : 'P');
 	$dec = user_price_dec();
 
-	$cols = array(4, 40, 230, 290, 340, 395, 450, 515);
+	$cols = array(4, 60, 225, 300, 325, 385, 450, 515);
 
 	// $headers in doctext.inc
-	$aligns = array('left',	'left',	'left', 'left', 'right', 'right', 'right');
+	$aligns = array('left',	'left',	'right', 'left', 'right', 'right', 'right');
 
 	$params = array('comments' => $comments);
 
@@ -81,7 +81,7 @@ function print_sales_orders()
 		}
 		else
 			$rep->title = ($print_as_quote==1 ? _("QUOTE") : _("SALES ORDER"));
-		$rep->SetHeaderType('Header224');
+		$rep->SetHeaderType('Header2');
 		$rep->currency = $cur;
 		$rep->Font();
 		$rep->Info($params, $cols, null, $aligns);
@@ -107,7 +107,7 @@ function print_sales_orders()
 				$DisplayDiscount ="";
 			else
 				$DisplayDiscount = number_format2($myrow2["discount_percent"]*100,user_percent_dec()) . "%";
-		//	$rep->TextCol(0, 1,	$myrow2['stk_code'], -2);
+			$rep->TextCol(0, 1,	$myrow2['stk_code'], -2);
 			$oldrow = $rep->row;
 			$rep->TextColLines(1, 2, $myrow2['description'], -2);
 			$newrow = $rep->row;
@@ -115,12 +115,11 @@ function print_sales_orders()
 			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 			{
 //				$rep->TextCol(2, 3,	$DisplayQty, -2);
-				$rep->TextCol(0, 1,	$myrow2["quantity"], -2);
-			//	$rep->TextCol(3, 4,	$myrow2['units'], -2);
-				$rep->TextCol(2, 3,	$DisplayPrice, -2);
-				$rep->TextCol(3, 4,	$DisplayNet, -2);
-				//	$rep->TextCol(4, 5,	$DisplayNet, -2);
-				$rep->TextCol(5, 6,	$DisplayNet, -2);
+				$rep->TextCol(2, 3,	$myrow2["quantity"], -2);
+				$rep->TextCol(3, 4,	$myrow2['units'], -2);
+				$rep->TextCol(4, 5,	$DisplayPrice, -2);
+				$rep->TextCol(5, 6,	$DisplayDiscount, -2);
+				$rep->TextCol(6, 7,	$DisplayNet, -2);
 			}	
 			$rep->row = $newrow;
 			//$rep->NewLine(1);
@@ -139,16 +138,16 @@ function print_sales_orders()
 		$doctype = ST_SALESORDER;
 
 		$rep->TextCol(3, 6, _("Sub-total"), -2);
-		$rep->TextCol(5, 6,	$DisplaySubTot, -2);
+		$rep->TextCol(6, 7,	$DisplaySubTot, -2);
 		$rep->NewLine();
 		$rep->TextCol(3, 6, _("Shipping"), -2);
-		$rep->TextCol(5, 6,	$DisplayFreight, -2);
+		$rep->TextCol(6, 7,	$DisplayFreight, -2);
 		$rep->NewLine();
 
 		$DisplayTotal = number_format2($myrow["freight_cost"] + $SubTotal, $dec);
 		if ($myrow['tax_included'] == 0) {
 			$rep->TextCol(3, 6, _("TOTAL ORDER EX GST"), - 2);
-			$rep->TextCol(5, 6,	$DisplayTotal, -2);
+			$rep->TextCol(6, 7,	$DisplayTotal, -2);
 			$rep->NewLine();
 		}
 
@@ -162,7 +161,7 @@ function print_sales_orders()
 			$DisplayTax = number_format2($tax_item['Value'], $dec);
 
 			$tax_type_name = $tax_item['tax_type_name'];
-	$SubTotal += $tax_item['Value'];
+
 			if ($myrow['tax_included'])
 			{
 				if (isset($alternative_tax_include_on_docs) && $alternative_tax_include_on_docs == 1)
@@ -170,29 +169,23 @@ function print_sales_orders()
 					if ($first)
 					{
 						$rep->TextCol(3, 6, _("Total Tax Excluded"), -2);
-						$rep->TextCol(5, 6,	number_format2($sign*$tax_item['net_amount'], $dec), -2);
+						$rep->TextCol(6, 7,	number_format2($sign*$tax_item['net_amount'], $dec), -2);
 						$rep->NewLine();
 					}
 					$rep->TextCol(3, 6, $tax_type_name, -2);
-					$rep->TextCol(5, 6,	$DisplayTax, -2);
+					$rep->TextCol(6, 7,	$DisplayTax, -2);
 					$first = false;
 				}
 				else
-					$rep->TextCol(3, 7, _("Included") . " " . $tax_type_name . " " . _("Amount"). ": " , -2);
-									$rep->TextCol(5, 6, $DisplayTax, -2);
-
+					$rep->TextCol(3, 7, _("Included") . " " . $tax_type_name . " " . _("Amount"). ": " . $DisplayTax, -2);
 			}
 			else
 			{
-			
+				$SubTotal += $tax_item['Value'];
 				$rep->TextCol(3, 6, $tax_type_name, -2);
-				$rep->TextCol(5, 6,	$DisplayTax, -2);
+				$rep->TextCol(6, 7,	$DisplayTax, -2);
 			}
 			$rep->NewLine();
-				$DisplayTotal = number_format2($myrow["freight_cost"] + $SubTotal, $dec);
-				$rep->Font('bold');
-		$rep->TextCol(3, 6, _("TOTAL ORDER GST INCL."), - 2);
-		$rep->TextCol(5,6,	$DisplayTotal, -2);
 		}
 
 		$rep->NewLine();
@@ -202,10 +195,10 @@ function print_sales_orders()
 		$rep->font('b');
 		$rep->MultiCell(170, 150, "Authorized Industrial distributor " , 0, 'L', 0, 2, 410,54, true);
 		$rep->MultiCell(170, 150, "Total Parco Pakistan LTD" , 0, 'L', 0, 2, 420,69, true);
-	
+		$DisplayTotal = number_format2($myrow["freight_cost"] + $SubTotal, $dec);
 		$rep->Font('bold');
-	//	$rep->TextCol(3, 6, _("TOTAL ORDER GST INCL."), - 2);
-	//	$rep->TextCol(5,6,	$DisplayTotal, -2);
+		$rep->TextCol(3, 6, _("TOTAL ORDER GST INCL."), - 2);
+		$rep->TextCol(6, 7,	$DisplayTotal, -2);
 		$words = price_in_words($myrow["freight_cost"] + $SubTotal, ST_SALESORDER);
 		if ($words != "")
 		{

@@ -146,15 +146,7 @@ function print_deliveries()
 				$rep->row = $oldrow;
 				if ($Net != 0.0  || !is_service($myrow2['mb_flag']) || !$SysPrefs->no_zero_lines_amount())
 				{
-					 $pref = get_company_pref();
-//                $item=get_item($myrow2['stk_code']);
-                    if($pref['alt_uom'] == 1)
-                    {
-                        $rep->TextCol(1, 2, $myrow2['units_id'], -2);
-                    }
-                    else {
-                        $rep->TextCol(1, 2, $myrow2['units'], -2);
-                    }
+					$rep->TextCol(1, 2,$myrow2['units']	, -2);
 					$rep->TextCol(0, 1,$DisplayQty	, -2);
 						$rep->TextCol(3, 4,	get_packings_report($myrow2['stock_id']), -2);
 					//if ($packing_slip == 0)

@@ -65,7 +65,7 @@ function print_invoices()
 	$from = min($fno[0], $tno[0]);
 	$to = max($fno[0], $tno[0]);
 
-	$cols = array(4, 40, 280, 340, 395, 460);
+	$cols = array(4, 60, 265, 335, 405, 460);
 
 	// $headers in doctext.inc
 
@@ -97,16 +97,16 @@ function print_invoices()
 			$rep->title = _('INVOICE');
 			$rep->filename = "Invoice" . $myrow['reference'] . ".pdf";
 		}
-		$rep->SetHeaderType('Header1078');
+		$rep->SetHeaderType('Header107777');
 		$rep->currency = $cur;
-		$rep->Font('');
+		$rep->Font();
 		$rep->Info($params, $cols, null, $aligns);
 
 		$contacts = get_branch_contacts($branch['branch_code'], 'invoice', $branch['debtor_no'], true);
 		$baccount['payment_service'] = $pay_service;
 
 
-		$rep->SetCommonData($myrow, $branch, $sales_order, $baccount, ST_SALESINVOICE, $contacts);
+		$rep->SetCommonData($myrow, $branch, $sales_order, $baccount, 12, $contacts);
 		$rep->NewPage();
 		$myrow3 = db_fetch(get_tax_rate_1());
 
@@ -115,13 +115,20 @@ function print_invoices()
 		$DisplayFreight=0;
 		$DisplaySubTot=0;
 		$DisplayTotal=0;
-            $sales_tax_total=0;
+$total_net=0;
+$total_sales_tax=0;
+$invoice_total=0;
+
+$rep->MultiCell(100, 10,"NTN No:  ".$myrow['ntn_id'] , 0, 'L', 0, 2, 50,270, true);
+                        $rep->MultiCell(100, 10,"GST No:  ".$myrow['tax_id'] , 0, 'L', 0, 2, 50,282, true);
 		while ($myrow2=db_fetch($result))
 		{
 
 
 
-			//$rep->MultiCell(100, 10,"NTN :  ".$myrow['ntn_id'] , 0, 'L', 0, 2, 50,140, true);
+
+
+			
 //				if ($myrow2["quantity"] == 0)
 //					continue;
 
@@ -146,27 +153,29 @@ function print_invoices()
 
 			$unit_price=round2($DisplayPrice / 1.17,$dec);
 			$Net_amount=round2(($DisplayPrice / 1.17) * $myrow2["quantity"],$dec);
+$total_net += $Net_amount ;
 			$sales_tax_amount=round2($Net_amount * 0.17,$dec);
-			$Gross=$Net_amount + $sales_tax_amount;
-
+$total_sales_tax=$sales_tax_amount;
+			$total_sales_tax=0;
+$total=$Net_amount + $sales_tax_amount;
 			if ($Net != 0.0 || !is_service($myrow2['mb_flag']) || !isset($no_zero_lines_amount) || $no_zero_lines_amount == 0)
 			{
 
 				$rep->TextCol(0, 1,	$DisplayQty.' '.$myrow2["units"]);
 				$rep->AmountCol(2, 3,	$unit_price, $dec);
 				$rep->AmountCol(3, 4,	$Net_amount, $dec);
-				$DisplaySubTot += $Net_amount;
-$sales_tax_total +=$sales_tax_amount;
-$DisplayTotal += $Net_amount + $sales_tax_amount;
+				$DisplaySubTot += ($myrow2["unit_price"]*$DisplayQty);
+				$total=$Net_amount + $sales_tax_amount;
 				$tax_total=$myrow3['rate']/100;
 				$tax_grand_amount=$tax_total*$myrow2["unit_price"]*$DisplayQty;
-
+$sales_tax_total += $sales_tax_amount;
 				$rep->AmountCol(4, 5,$sales_tax_amount	, $dec);
 				$gross_amount_=$myrow2["unit_price"]*$DisplayQty+$tax_grand_amount;
 				$rep->AmountCol(5, 6,$Net_amount + $sales_tax_amount, $dec);
+$invoice_total += $Net_amount + $sales_tax_amount;
 			}
 			$rep->row = $newrow;
-			$rep->NewLine(1);
+			//$rep->NewLine(1);
 			if ($rep->row < $rep->bottomMargin + (15 * $rep->lineHeight))
 				$rep->NewPage();
 		}
@@ -178,21 +187,33 @@ $DisplayTotal += $Net_amount + $sales_tax_amount;
 			//$rep->TextColLines(1, 5, $memo, -2);
 		}
 
-		
+		$DisplayFreight +=$tax_grand_amount;
 
 		$rep->row = $rep->bottomMargin + (15 * $rep->lineHeight);
 		$doctype = ST_SALESINVOICE;
-		$rep->NewLine(-2.5);
+		$rep->NewLine(5);
+		$rep->Font('bold');
+
+
+
+		$rep->TextCol(4, 6, _("Total Net Amount"), -2);
 		$rep->font('');
-		$rep->TextCol(3, 5, _("Total Net Amount"), -2);
-		$rep->AmountCol(5, 6,	$DisplaySubTot, $dec);
+		$rep->AmountCol(5, 6,	$total_net, $dec);
 		$rep->NewLine();
-		$rep->TextCol(3, 5, _("Total S.Tax Amount"), -2);
+		$rep->Font('bold');
+		$rep->TextCol(4, 6, _("Total S.Tax Amount"), -2);
+		$rep->font('');
 		$rep->AmountCol(5, 6,	$sales_tax_total, $dec);
 		$rep->NewLine();
-		$rep->TextCol(3, 5,_("Delivery charges"), -2);
-		$rep->AmountCol(5, 6,	$myrow['freight_cost'], $dec);
+		$rep->Font('bold');
+		$rep->TextCol(4, 6, _("Carraige"), -2);
 
+		$rep->font('');
+		$rep->AmountCol(5, 6,	$myrow['freight_cost'], $dec);
+		$rep->Font('bold');
+		$rep->MultiCell(250, 20, "Terms:", 0, 'L', 0, 2, 50,680, true);
+		$rep->font('');
+		$rep->MultiCell(250, 20, $myrow['memo'], 0, 'L', 0, 2, 50,690, true);
 		//$rep->NewLine();
 		$tax_items = get_trans_tax_details(ST_SALESINVOICE, $i);
 		$first = true;
@@ -214,6 +235,7 @@ $DisplayTotal += $Net_amount + $sales_tax_amount;
 					if ($first)
 					{
 						$rep->TextCol(4, 5, _("Total Net Amount"), -2);
+
 						$rep->AmountCol(6, 7,	number_format2($sign*$tax_item['net_amount'], $dec), -2);
 						$rep->NewLine();
 					}
@@ -233,14 +255,20 @@ $DisplayTotal += $Net_amount + $sales_tax_amount;
 		}
 
 		$rep->NewLine();
-		
-		$rep->Font('');
+		$DisplayTotal += $gross_amount_;
+		$rep->Font('bold');
 
-		$rep->TextCol(3, 5,_("Invoice Total (Rs.)"), - 2);
-		$rep->AmountCol(5, 6, $DisplayTotal, $dec);
+		$rep->TextCol(4, 6, _("Invoice Total (Rs.)"), - 2);
+		$rep->font('');
+		$rep->AmountCol(5, 6, $invoice_total, $dec);
 		$words = price_in_words($myrow['Total'], ST_SALESINVOICE);
-		$rep->MultiCell(250, 20, "Tel:".get_phone($myrow['debtor_no']), 0, 'L', 0, 2, 50,259, true);
-
+		$rep->MultiCell(250, 20, "Tel:".get_phone($myrow['debtor_no']), 0, 'L', 0, 2, 50,257, true);
+		$rep->setfontsize(11);
+		//$rep->MultiCell(250, 20, "Petro Trade & Industry", 0, 'L', 0, 2, 400,87, true);
+		//$rep->MultiCell(250, 20, "Al Baraka Bank", 0, 'L', 0, 2, 400,98, true);
+		//$rep->MultiCell(250, 20, "A/c# 0113109250010", 0, 'L', 0, 2, 400,108, true);
+		//$rep->MultiCell(250, 20, "Citi Tower Branch, Karachi", 0, 'L', 0, 2, 400,118, true);
+		$rep->setfontsize(10);
 		if ($words != "")
 		{
 			$rep->NewLine(1);
