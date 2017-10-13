@@ -1,0 +1,19 @@
+
+ALTER TABLE `DB Name`.`Table Name` 
+ADD `Column Name 1 ` Data Type, 
+ADD `Column Name 2` Data Type, 
+ADD `Column Name 3` Data Type, 
+ADD `Column Name 4` Data Type, 
+ADD `Column Name 5` Data Type, 
+ADD `Column Name 6` Data Type;
+
+ALTER TABLE `0_purch_order_details` 
+ADD `text1` VARCHAR(30) NOT NULL , 
+ADD `text2` VARCHAR(30) NOT NULL, 
+ADD `text3` VARCHAR(30) NOT NULL, 
+ADD `comb1` VARCHAR(30) NOT NULL, 
+ADD `comb2` VARCHAR(30) NOT NULL, 
+ADD `comb3` VARCHAR(30) NOT NULL;
+
+ALTER TABLE `0_audit_trail` 
+ADD `id` INT(11) NOT NULL AUTO_INCREMENT FIRST, ADD PRIMARY KEY (`id`) ;
